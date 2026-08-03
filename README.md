@@ -198,28 +198,6 @@ The backend should **provide scene data, not render the scene itself**.
 
 ---
 
-# Animation & Interaction
-
-The UI uses several animation technologies to create a cinematic product experience.
-
-### Framer Motion
-
-Used for:
-
-* Page transitions
-* Component entrance/exit
-* Interactive UI motion
-* Navigation transitions
-
-### GSAP
-
-Used where appropriate for:
-
-* Scroll-based effects
-* Timeline animations
-* Section reveals
-* Parallax effects
-* Advanced motion
 
 ### Anime.js
 
