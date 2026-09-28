@@ -14,6 +14,7 @@ from common.ai_errors import AIProviderError
 from .providers.fal_provider import FalProvider
 from .providers.flux_provider import FluxProvider
 from .providers.openai_image_provider import OpenAIImageProvider
+from .providers.pollinations_provider import PollinationsProvider
 from .providers.replicate_provider import ReplicateProvider
 from .providers.stability_provider import StabilityProvider
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 def _build_providers() -> dict:
     return {
         "openai": OpenAIImageProvider(api_key=settings.OPENAI_API_KEY),
+        "pollinations": PollinationsProvider(),
         "stability": StabilityProvider(api_key=settings.STABILITY_API_KEY),
         "replicate": ReplicateProvider(api_key=settings.REPLICATE_API_KEY),
         "flux": FluxProvider(api_key=settings.REPLICATE_API_KEY),

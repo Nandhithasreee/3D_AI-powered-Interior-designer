@@ -14,8 +14,8 @@ import React, { useEffect, useRef, useState } from "react";
 /**
  * Renders a Gemini-generated room schema (see backend/ai_engine/schema.py)
  * as a live, walkable A-Frame scene. When an AI-generated interior image
- * URL is provided, it is used as an immersive sky background; otherwise
- * the room geometry is rendered as before.
+ * URL is provided, it is displayed as the room preview; otherwise the room
+ * geometry is rendered as before.
  */
 export default function RoomViewer3D({ scene, roomLabel, imageUrl }) {
   const containerRef = useRef(null);
@@ -23,6 +23,17 @@ export default function RoomViewer3D({ scene, roomLabel, imageUrl }) {
   const cameraRigRef = useRef(null);
   const [dayMode, setDayMode] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    const handler = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   if (!scene) {
     return (
@@ -61,11 +72,48 @@ export default function RoomViewer3D({ scene, roomLabel, imageUrl }) {
     sceneEl.components.screenshot.capture("perspective");
   };
 
-  useEffect(() => {
-    const handler = () => setFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
-  }, []);
+  if (imageUrl && !imageFailed) {
+    return (
+      <div ref={containerRef} className="relative h-full min-h-[420px] overflow-hidden rounded-2xl bg-black">
+        <a-scene
+          ref={sceneElRef}
+          embedded
+          vr-mode-ui="enabled: false"
+          screenshot="width: 1600; height: 1000"
+          renderer="colorManagement: true; antialias: true"
+          style={{ width: "100%", height: "100%", minHeight: "420px" }}
+        >
+          <a-assets>
+            <img id="generated-room-image" src={imageUrl} alt="" onError={() => setImageFailed(true)} />
+          </a-assets>
+          <a-sky src="#generated-room-image" rotation="0 -90 0" />
+          <a-entity ref={cameraRigRef} position="0 1.6 0">
+            <a-camera look-controls="enabled: true; reverseMouseDrag: true" wasd-controls="enabled: true" />
+          </a-entity>
+        </a-scene>
+
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4">
+          <div className="pointer-events-auto flex items-center justify-between">
+            <span className="rounded-full bg-black/50 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-brass backdrop-blur">
+              {roomLabel || room.type} · Drag to explore
+            </span>
+          </div>
+          <div className="pointer-events-auto flex items-center justify-center gap-2">
+            <ViewerButton
+              icon={faRotateLeft}
+              label="Reset view"
+              onClick={() => {
+                cameraRigRef.current?.setAttribute("position", "0 1.6 0");
+                cameraRigRef.current?.setAttribute("rotation", "0 0 0");
+              }}
+            />
+            <ViewerButton icon={faCamera} label="Screenshot" onClick={takeScreenshot} />
+            <ViewerButton icon={fullscreen ? faCompress : faExpand} label="Fullscreen" onClick={toggleFullscreen} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Wall segments as four thin boxes around the room perimeter
   const wallThickness = 0.1;
@@ -89,10 +137,8 @@ export default function RoomViewer3D({ scene, roomLabel, imageUrl }) {
       >
         <a-assets />
 
-        {imageUrl && <a-sky src={imageUrl} rotation="0 -180 0" />}
-
         {/* Sky / ambient environment */}
-        {!imageUrl && <a-sky color={dayMode ? "#cfe4f2" : "#0a0a14"} />}
+        <a-sky color={dayMode ? "#cfe4f2" : "#0a0a14"} />
         <a-entity light={`type: ambient; color: ${dayMode ? "#ffffff" : "#22243a"}; intensity: ${dayMode ? 0.55 : 0.18}`} />
         {dayMode && (
           <a-entity light="type: directional; color: #fff7e6; intensity: 0.5" position="3 6 2" />
